@@ -3,12 +3,20 @@ name = "movie-api"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+# We could use any path here, but we are following the community convention
+# We could specify a library name using the `name` field. If unspecified,
+# cargo will default to `package.name`, which is what we want.
+path = "src/lib.rs"
 
 [dependencies]
 axum = "0.6"
+config = { version = "0.13", default-features = false, features = ["yaml"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-bunyan-formatter = "0.3.1"
+tracing-log = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
+serde-aux = "3"
 serde_json = "1.0"
