@@ -1,22 +1,22 @@
 use axum::{routing::get, Router};
-use std::net::SocketAddr;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use std::net::{SocketAddr, SocketAddrV4, IpAddr};
+
+use movie_api::configuration::get_configuration;
+use movie_api::telemetry::{get_subscriber, init_subscriber};
 
 mod controllers;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "example_validator=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-    
+    let subscriber = get_subscriber("movie-api".into(), "info".into(), std::io::stdout);
+    init_subscriber(subscriber);
+
+    let configuration = get_configuration().expect("Failed to read configuration.");
+
     let app = Router::new().route("/health", get(controllers::health::get));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+    let ip_addr: IpAddr = configuration.http_server.host.parse().expect("invalid ip address");
+    let addr = SocketAddr::from((ip_addr, configuration.http_server.port));
     tracing::debug!("listening on {}", addr);
 
     axum::Server::bind(&addr)
