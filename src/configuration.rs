@@ -22,7 +22,7 @@ pub struct DatabaseConfiguration
     pub database_url: String,
     pub log_level: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub max_open_connections: u16,
+    pub max_open_connections: u32,
 }
 
 pub fn get_configuration() -> Result<Configuration, config::ConfigError> {

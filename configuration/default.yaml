@@ -3,5 +3,5 @@ http_server:
   host: 127.0.0.1
 database:
   database_url: postgresql://postgres:Password123@127.0.0.1:5432/moviedb?sslmode=disable
-  log_leve: warn
+  log_level: Warn
   max_open_connections: 10

@@ -11,6 +11,7 @@ path = "src/lib.rs"
 
 [dependencies]
 axum = "0.6"
+anyhow = "1"
 config = { version = "0.13", default-features = false, features = ["yaml"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1"
@@ -20,3 +21,16 @@ tracing-log = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
 serde-aux = "3"
 serde_json = "1.0"
+
+[dependencies.sqlx]
+version = "0.6"
+default-features = false
+features = [
+    "runtime-actix-rustls", 
+    "macros", 
+    "postgres", 
+    "uuid", 
+    "chrono", 
+    "migrate",
+    "offline"
+]
