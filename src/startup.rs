@@ -1,6 +1,6 @@
 use crate::configuration::{Configuration, DatabaseConfiguration};
-use crate::controllers::health;
-use axum::{routing::get, Router};
+use crate::controllers::{health, movies};
+use axum::{routing::{get, put}, Router};
 use tracing::log::LevelFilter;
 use std::str::FromStr;
 use std::time::Duration;
@@ -42,6 +42,8 @@ impl Application {
 pub fn app(db_pool: PgPool) -> Router {
     Router::new()
         .route("/health", get(health::get))
+        .route("/movies", get(movies::list).post(movies::create))
+        .route("/movies/:id", get(movies::get).put(movies::update).delete(movies::delete))
         .with_state(db_pool)
 }
 
