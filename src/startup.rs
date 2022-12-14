@@ -1,5 +1,8 @@
 use crate::configuration::{Configuration, DatabaseConfiguration};
 use crate::controllers::{health, movies};
+use crate::store::memory_store::MemoryStore;
+use crate::store::sql_store::SqlStore;
+use crate::store::store::Store;
 use axum::{
     routing::{get, put},
     Router,
@@ -20,6 +23,11 @@ pub struct Application {
 impl Application {
     pub async fn build(configuration: Configuration) -> Result<Self, anyhow::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
+        // let store = match configuration.database.store_type.as_ref() {
+        //     "memory" => MemoryStore::new(),
+        //     "sql" => SqlStore::new(connection_pool),
+        // };
+        let store = MemoryStore::new();
 
         let address = format!(
             "{}:{}",
@@ -27,7 +35,7 @@ impl Application {
         );
         let socket_addr: SocketAddr = address.parse().expect("invalid host address");
 
-        let app = app(connection_pool);
+        let app = app(store);
 
         Ok(Self { socket_addr, app })
     }
@@ -42,7 +50,7 @@ impl Application {
     }
 }
 
-pub fn app(db_pool: PgPool) -> Router {
+pub fn app(store: MemoryStore) -> Router {
     Router::new()
         .route("/health", get(health::get))
         .route("/movies", get(movies::list).post(movies::create))
@@ -50,7 +58,7 @@ pub fn app(db_pool: PgPool) -> Router {
             "/movies/:id",
             get(movies::get).put(movies::update).delete(movies::delete),
         )
-        .with_state(db_pool)
+        .with_state(store)
 }
 
 pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {

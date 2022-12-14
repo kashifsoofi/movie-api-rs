@@ -17,6 +17,7 @@ pub struct HttpServerConfiguration {
 
 #[derive(Clone, serde::Deserialize)]
 pub struct DatabaseConfiguration {
+    pub store_type: String,
     pub database_url: String,
     pub log_level: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
