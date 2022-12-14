@@ -1,10 +1,10 @@
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::Utc;
 
 #[derive(Deserialize, Serialize)]
 struct MovieResponse {
@@ -33,9 +33,7 @@ pub async fn list() -> impl IntoResponse {
     (StatusCode::OK, Json(movies))
 }
 
-pub async fn get(
-    Path(id): Path<Uuid>,
-) -> impl IntoResponse {
+pub async fn get(Path(id): Path<Uuid>) -> impl IntoResponse {
     let movie_response = MovieResponse {
         id,
         title: String::from("Title"),
@@ -56,9 +54,7 @@ pub struct CreateMovieRequest {
     ticket_price: f64,
 }
 
-pub async fn create(
-    Json(request): Json<CreateMovieRequest>,
-) -> impl IntoResponse {
+pub async fn create(Json(request): Json<CreateMovieRequest>) -> impl IntoResponse {
     let movie_response = MovieResponse {
         id: Uuid::new_v4(),
         title: request.title,
@@ -78,9 +74,7 @@ pub struct UpdateMovieRequest {
     ticket_price: f64,
 }
 
-pub async fn update(
-    Json(request): Json<UpdateMovieRequest>,
-) -> impl IntoResponse {
+pub async fn update(Json(request): Json<UpdateMovieRequest>) -> impl IntoResponse {
     let movie_response = MovieResponse {
         id: Uuid::new_v4(),
         title: request.title,
@@ -92,8 +86,6 @@ pub async fn update(
     (StatusCode::OK, Json(movie_response))
 }
 
-pub async fn delete(
-    Path(_id): Path<Uuid>,
-) -> impl IntoResponse {
+pub async fn delete(Path(_id): Path<Uuid>) -> impl IntoResponse {
     StatusCode::NO_CONTENT
 }

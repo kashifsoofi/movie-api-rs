@@ -1,13 +1,16 @@
 use crate::configuration::{Configuration, DatabaseConfiguration};
 use crate::controllers::{health, movies};
-use axum::{routing::{get, put}, Router};
-use tracing::log::LevelFilter;
+use axum::{
+    routing::{get, put},
+    Router,
+};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use sqlx::{ConnectOptions, PgPool};
+use std::net::SocketAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use std::net::SocketAddr;
-use sqlx::postgres::{PgPoolOptions, PgConnectOptions};
-use sqlx::{PgPool, ConnectOptions};
 use tokio::signal;
+use tracing::log::LevelFilter;
 
 pub struct Application {
     socket_addr: SocketAddr,
@@ -26,7 +29,7 @@ impl Application {
 
         let app = app(connection_pool);
 
-        Ok(Self{ socket_addr, app })
+        Ok(Self { socket_addr, app })
     }
 
     pub async fn run_until_stopped(self) {
@@ -43,13 +46,18 @@ pub fn app(db_pool: PgPool) -> Router {
     Router::new()
         .route("/health", get(health::get))
         .route("/movies", get(movies::list).post(movies::create))
-        .route("/movies/:id", get(movies::get).put(movies::update).delete(movies::delete))
+        .route(
+            "/movies/:id",
+            get(movies::get).put(movies::update).delete(movies::delete),
+        )
         .with_state(db_pool)
 }
 
 pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {
-    let mut connect_options = PgConnectOptions::from_str(&configuration.database_url).expect("invalid connection string");
-    let log_level = LevelFilter::from_str(&configuration.log_level).unwrap_or_else(|_| LevelFilter::Error);
+    let mut connect_options =
+        PgConnectOptions::from_str(&configuration.database_url).expect("invalid connection string");
+    let log_level =
+        LevelFilter::from_str(&configuration.log_level).unwrap_or_else(|_| LevelFilter::Error);
     connect_options.log_statements(log_level);
 
     PgPoolOptions::new()
