@@ -1,36 +1,40 @@
 use std::{collections::HashMap, sync::Arc};
 
+use axum::async_trait;
 use chrono::Utc;
 use parking_lot::RwLock;
 use uuid::Uuid;
 
-use super::store::{Movie, MovieStore, Store, CreateMovieParams, UpdateMovieParams};
+use super::store::{CreateMovieParams, DynMovieStore, Movie, MovieStore, Store, UpdateMovieParams};
 
 type Movies = HashMap<Uuid, Movie>;
 
 #[derive(Clone)]
 pub struct MemoryStore {
-    movie_store: MemoryMovieStore    
+    movie_store: MemoryMovieStore,
 }
 
 impl MemoryStore {
     pub fn new() -> MemoryStore {
         let movie_store = MemoryMovieStore::new();
-        Self {
-            movie_store,
-        }
+        Self { movie_store }
+    }
+
+    pub fn get_movie_store(self) -> MemoryMovieStore {
+        self.movie_store
     }
 }
 
+#[async_trait]
 impl Store for MemoryStore {
-    fn movie_store(self) -> Box<dyn MovieStore> {
-        Box::new(self.movie_store)
+    fn movie_store(&self) -> DynMovieStore {
+        Arc::new(self.movie_store.clone()) as DynMovieStore
     }
 }
 
 #[derive(Clone)]
 pub struct MemoryMovieStore {
-    movies: Arc<RwLock<Movies>>
+    movies: Arc<RwLock<Movies>>,
 }
 
 impl MemoryMovieStore {
@@ -41,6 +45,7 @@ impl MemoryMovieStore {
     }
 }
 
+#[async_trait]
 impl MovieStore for MemoryMovieStore {
     fn get_all(&self) -> Vec<Movie> {
         let mut result = Vec::new();
@@ -59,7 +64,7 @@ impl MovieStore for MemoryMovieStore {
 
         match movie {
             None => None,
-            Some(movie) => Some((*movie).clone())
+            Some(movie) => Some((*movie).clone()),
         }
     }
 
@@ -87,25 +92,44 @@ impl MovieStore for MemoryMovieStore {
         };
 
         self.movies.write().entry(movie.id).and_modify(|m| {
-            m.title = movie_to_update.title;
-            m.director = movie_to_update.director;
-            m.release_date =  movie_to_update.release_date;
-            m.ticket_price = movie_to_update.ticket_price;
-            m.updated_at =  Utc::now();
+            match movie_to_update.title {
+                Some(title) => {
+                    m.title = title;
+                    m.updated_at = Utc::now();
+                }
+                _ => {}
+            }
+            match movie_to_update.director {
+                Some(director) => {
+                    m.director = director;
+                    m.updated_at = Utc::now();
+                }
+                _ => {}
+            }
+            match movie_to_update.release_date {
+                Some(release_date) => {
+                    m.release_date = release_date;
+                    m.updated_at = Utc::now();
+                }
+                _ => {}
+            }
+            match movie_to_update.ticket_price {
+                Some(ticket_price) => {
+                    m.ticket_price = ticket_price;
+                    m.updated_at = Utc::now();
+                }
+                _ => {}
+            }
         });
 
         Ok(self.get_by_id(movie.id).unwrap())
     }
 
     fn delete(&self, id: Uuid) -> Result<Movie, String> {
-        let r = self.movies.read();
-        let movie = r.get(&id);
+        let movie = self.movies.write().remove(&id);
         match movie {
             None => Err("not found".to_string()),
-            Some(movie) => {
-                self.movies.write().remove(&id);
-                Ok((*movie).clone())
-            }
+            Some(movie) => Ok(movie),
         }
     }
 }

@@ -1,6 +1,8 @@
-use uuid::Uuid;
+use std::sync::Arc;
+
+use super::store::{CreateMovieParams, DynMovieStore, Movie, MovieStore, Store, UpdateMovieParams};
 use sqlx::PgPool;
-use super::store::{Movie, MovieStore, Store, CreateMovieParams, UpdateMovieParams};
+use uuid::Uuid;
 
 pub struct SqlStore {
     db_pool: PgPool,
@@ -18,20 +20,19 @@ impl SqlStore {
 }
 
 impl Store for SqlStore {
-    fn movie_store(self) -> Box<dyn MovieStore> {
-        Box::new(self.movie_store)
+    fn movie_store(&self) -> DynMovieStore {
+        Arc::new(self.movie_store.clone()) as DynMovieStore
     }
 }
 
+#[derive(Clone)]
 pub struct SqlMovieStore {
     db_pool: PgPool,
 }
 
 impl SqlMovieStore {
     fn new(db_pool: PgPool) -> Self {
-        SqlMovieStore {
-            db_pool,
-        }
+        SqlMovieStore { db_pool }
     }
 }
 

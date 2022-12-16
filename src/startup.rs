@@ -2,7 +2,7 @@ use crate::configuration::{Configuration, DatabaseConfiguration};
 use crate::controllers::{health, movies};
 use crate::store::memory_store::MemoryStore;
 use crate::store::sql_store::SqlStore;
-use crate::store::store::Store;
+use crate::store::store::{DynMovieStore, DynStore, Store};
 use axum::{
     routing::{get, put},
     Router,
@@ -11,6 +11,7 @@ use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::{ConnectOptions, PgPool};
 use std::net::SocketAddr;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
 use tracing::log::LevelFilter;
@@ -23,11 +24,10 @@ pub struct Application {
 impl Application {
     pub async fn build(configuration: Configuration) -> Result<Self, anyhow::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
-        // let store = match configuration.database.store_type.as_ref() {
-        //     "memory" => MemoryStore::new(),
-        //     "sql" => SqlStore::new(connection_pool),
-        // };
-        let store = MemoryStore::new();
+        let dyn_store = match configuration.database.store_type.as_ref() {
+            "sql" => Arc::new(SqlStore::new(connection_pool)) as DynStore,
+            _ => Arc::new(MemoryStore::new()) as DynStore,
+        };
 
         let address = format!(
             "{}:{}",
@@ -35,7 +35,7 @@ impl Application {
         );
         let socket_addr: SocketAddr = address.parse().expect("invalid host address");
 
-        let app = app(store);
+        let app = app(dyn_store);
 
         Ok(Self { socket_addr, app })
     }
@@ -50,7 +50,7 @@ impl Application {
     }
 }
 
-pub fn app(store: MemoryStore) -> Router {
+pub fn app(store: DynStore) -> Router {
     Router::new()
         .route("/health", get(health::get))
         .route("/movies", get(movies::list).post(movies::create))
@@ -58,6 +58,7 @@ pub fn app(store: MemoryStore) -> Router {
             "/movies/:id",
             get(movies::get).put(movies::update).delete(movies::delete),
         )
+        .with_state(store.movie_store())
         .with_state(store)
 }
 
