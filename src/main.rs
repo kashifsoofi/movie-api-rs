@@ -10,6 +10,8 @@ async fn main() {
 
     let configuration = get_configuration().expect("Failed to read configuration.");
 
-    let applicatin = Application::build(configuration).await.expect("Failed to build application");
+    let applicatin = Application::build(configuration)
+        .await
+        .expect("Failed to build application");
     applicatin.run_until_stopped().await;
 }

@@ -1,4 +1,5 @@
 pub mod configuration;
-pub mod telemetry;
-pub mod startup;
 pub mod controllers;
+pub mod startup;
+pub mod store;
+pub mod telemetry;

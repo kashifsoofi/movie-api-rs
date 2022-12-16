@@ -9,16 +9,15 @@ pub struct Configuration {
 }
 
 #[derive(Clone, serde::Deserialize)]
-pub struct HttpServerConfiguration
-{
+pub struct HttpServerConfiguration {
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
 }
 
 #[derive(Clone, serde::Deserialize)]
-pub struct DatabaseConfiguration
-{
+pub struct DatabaseConfiguration {
+    pub store_type: String,
     pub database_url: String,
     pub log_level: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
@@ -31,8 +30,8 @@ pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
 
     let environment = env::var("ENVIRONMENT").unwrap_or_else(|_| "development".into());
 
-        // Initialise our configuration reader
-        let configuration = config::Config::builder()
+    // Initialise our configuration reader
+    let configuration = config::Config::builder()
         // Add configuration values from a file named `base.yaml`.
         .add_source(config::File::from(
             configuration_directory.join("default.yaml"),

@@ -1,13 +1,20 @@
 use crate::configuration::{Configuration, DatabaseConfiguration};
-use crate::controllers::health;
-use axum::{routing::get, Router};
-use tracing::log::LevelFilter;
-use std::str::FromStr;
-use std::time::Duration;
+use crate::controllers::{health, movies};
+use crate::store::memory_store::MemoryStore;
+use crate::store::sql_store::SqlStore;
+use crate::store::store::{DynMovieStore, DynStore, Store};
+use axum::{
+    routing::{get, put},
+    Router,
+};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use sqlx::{ConnectOptions, PgPool};
 use std::net::SocketAddr;
-use sqlx::postgres::{PgPoolOptions, PgConnectOptions};
-use sqlx::{PgPool, ConnectOptions};
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::signal;
+use tracing::log::LevelFilter;
 
 pub struct Application {
     socket_addr: SocketAddr,
@@ -17,6 +24,10 @@ pub struct Application {
 impl Application {
     pub async fn build(configuration: Configuration) -> Result<Self, anyhow::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
+        let dyn_store = match configuration.database.store_type.as_ref() {
+            "sql" => Arc::new(SqlStore::new(connection_pool)) as DynStore,
+            _ => Arc::new(MemoryStore::new()) as DynStore,
+        };
 
         let address = format!(
             "{}:{}",
@@ -24,9 +35,9 @@ impl Application {
         );
         let socket_addr: SocketAddr = address.parse().expect("invalid host address");
 
-        let app = app(connection_pool);
+        let app = app(dyn_store);
 
-        Ok(Self{ socket_addr, app })
+        Ok(Self { socket_addr, app })
     }
 
     pub async fn run_until_stopped(self) {
@@ -39,15 +50,23 @@ impl Application {
     }
 }
 
-pub fn app(db_pool: PgPool) -> Router {
+pub fn app(store: DynStore) -> Router {
     Router::new()
         .route("/health", get(health::get))
-        .with_state(db_pool)
+        .route("/movies", get(movies::list).post(movies::create))
+        .route(
+            "/movies/:id",
+            get(movies::get).put(movies::update).delete(movies::delete),
+        )
+        .with_state(store.movie_store())
+        .with_state(store)
 }
 
 pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {
-    let mut connect_options = PgConnectOptions::from_str(&configuration.database_url).expect("invalid connection string");
-    let log_level = LevelFilter::from_str(&configuration.log_level).unwrap_or_else(|_| LevelFilter::Error);
+    let mut connect_options =
+        PgConnectOptions::from_str(&configuration.database_url).expect("invalid connection string");
+    let log_level =
+        LevelFilter::from_str(&configuration.log_level).unwrap_or_else(|_| LevelFilter::Error);
     connect_options.log_statements(log_level);
 
     PgPoolOptions::new()
