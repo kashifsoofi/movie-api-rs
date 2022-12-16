@@ -15,11 +15,11 @@ pub type DynMovieStore = Arc<dyn MovieStore + Send + Sync>;
 
 #[async_trait]
 pub trait MovieStore {
-    fn get_all(&self) -> Vec<Movie>;
-    fn get_by_id(&self, id: Uuid) -> Option<Movie>;
-    fn create(&self, movie: CreateMovieParams) -> Result<Movie, String>;
-    fn update(&self, id: Uuid, movie: UpdateMovieParams) -> Result<Movie, String>;
-    fn delete(&self, id: Uuid) -> Result<Movie, String>;
+    async fn get_all(&self) -> Vec<Movie>;
+    async fn get_by_id(&self, id: Uuid) -> Option<Movie>;
+    async fn create(&self, movie: CreateMovieParams) -> Result<Movie, String>;
+    async fn update(&self, id: Uuid, movie: UpdateMovieParams) -> Result<Movie, String>;
+    async fn delete(&self, id: Uuid) -> Result<Movie, String>;
 }
 
 #[derive(Clone, Debug)]

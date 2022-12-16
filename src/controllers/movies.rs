@@ -23,7 +23,7 @@ pub struct MovieResponse {
 }
 
 pub async fn list(State(movie_store): State<DynMovieStore>) -> impl IntoResponse {
-    let movies = movie_store.get_all();
+    let movies = movie_store.get_all().await;
     let mut movie_responses = Vec::new();
     for movie in movies {
         let movie_response = MovieResponse {
@@ -45,7 +45,7 @@ pub async fn get(
     Path(id): Path<Uuid>,
     State(movie_store): State<DynMovieStore>,
 ) -> Result<Json<MovieResponse>, AppError> {
-    let movie = movie_store.get_by_id(id);
+    let movie = movie_store.get_by_id(id).await;
     match movie {
         None => {
             return Err(AppError::MovieNotFound);
@@ -95,7 +95,7 @@ pub async fn create(
         release_date: release_date,
         ticket_price: request.ticket_price,
     };
-    let movie = movie_store.create(params);
+    let movie = movie_store.create(params).await;
     let movie = match movie {
         Ok(movie) => movie,
         Err(error_message) => return Err(AppError::Unknown(error_message)),
@@ -148,7 +148,7 @@ pub async fn update(
         release_date: release_date,
         ticket_price: request.ticket_price,
     };
-    let movie = movie_store.update(id, params);
+    let movie = movie_store.update(id, params).await;
     let movie = match movie {
         Ok(movie) => movie,
         Err(error_message) => return Err(AppError::Unknown(error_message)),
@@ -170,7 +170,7 @@ pub async fn delete(
     Path(id): Path<Uuid>,
     State(movie_store): State<DynMovieStore>,
 ) -> Result<Json<MovieResponse>, AppError> {
-    let movie = movie_store.delete(id);
+    let movie = movie_store.delete(id).await;
     match movie {
         Err(_) => return Err(AppError::MovieNotFound),
         Ok(movie) => {

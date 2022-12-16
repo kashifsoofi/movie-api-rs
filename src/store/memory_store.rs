@@ -47,7 +47,7 @@ impl MemoryMovieStore {
 
 #[async_trait]
 impl MovieStore for MemoryMovieStore {
-    fn get_all(&self) -> Vec<Movie> {
+    async fn get_all(&self) -> Vec<Movie> {
         let mut result = Vec::new();
         let r = self.movies.read();
 
@@ -58,7 +58,7 @@ impl MovieStore for MemoryMovieStore {
         result
     }
 
-    fn get_by_id(&self, id: Uuid) -> Option<Movie> {
+    async fn get_by_id(&self, id: Uuid) -> Option<Movie> {
         let r = self.movies.read();
         let movie = r.get(&id);
 
@@ -68,7 +68,7 @@ impl MovieStore for MemoryMovieStore {
         }
     }
 
-    fn create(&self, movie_to_create: CreateMovieParams) -> Result<Movie, String> {
+    async fn create(&self, movie_to_create: CreateMovieParams) -> Result<Movie, String> {
         let movie = Movie {
             id: Uuid::new_v4(),
             title: movie_to_create.title,
@@ -84,8 +84,8 @@ impl MovieStore for MemoryMovieStore {
         Ok(movie)
     }
 
-    fn update(&self, id: Uuid, movie_to_update: UpdateMovieParams) -> Result<Movie, String> {
-        let movie = self.get_by_id(id);
+    async fn update(&self, id: Uuid, movie_to_update: UpdateMovieParams) -> Result<Movie, String> {
+        let movie = self.get_by_id(id).await;
         let movie = match movie {
             None => return Err("not found".to_string()),
             Some(movie) => movie,
@@ -122,10 +122,10 @@ impl MovieStore for MemoryMovieStore {
             }
         });
 
-        Ok(self.get_by_id(movie.id).unwrap())
+        Ok(self.get_by_id(movie.id).await.unwrap())
     }
 
-    fn delete(&self, id: Uuid) -> Result<Movie, String> {
+    async fn delete(&self, id: Uuid) -> Result<Movie, String> {
         let movie = self.movies.write().remove(&id);
         match movie {
             None => Err("not found".to_string()),
