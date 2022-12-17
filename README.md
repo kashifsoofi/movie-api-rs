@@ -11,6 +11,14 @@ docker-compose -f docker-compose.dev-env.yml
 ```
 This is only needed if you are going to run api against PostgreSQL. There is an in memory store available in code, that can be used instead of PostgreSQL.
 
+## Run Project
+### To run with in memory store
+- set `store_type: memory` in configuration/default.yaml under database
+- run with `cargo run`
+### To run with Postgres store
+- set `store_type: sql` in configuration/default.yaml under database
+- run with `cargo run`
+
 ## API Endpoints
 - GET `/health`
 - GET `/movies` list all movies
