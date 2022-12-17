@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
 use axum::async_trait;
-use chrono::{DateTime, Utc};
+use bigdecimal::BigDecimal;
+use chrono::NaiveDateTime;
 use uuid::Uuid;
 
 pub type DynStore = Arc<dyn Store + Send + Sync>;
 
 #[async_trait]
 pub trait Store {
-    fn movie_store(&self) -> DynMovieStore;
+    async fn is_connected(&self) -> bool;
+    async fn movie_store(&self) -> DynMovieStore;
 }
 
 pub type DynMovieStore = Arc<dyn MovieStore + Send + Sync>;
@@ -27,22 +29,22 @@ pub struct Movie {
     pub id: Uuid,
     pub title: String,
     pub director: String,
-    pub release_date: DateTime<Utc>,
-    pub ticket_price: f64,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub release_date: NaiveDateTime,
+    pub ticket_price: BigDecimal,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 pub struct CreateMovieParams {
     pub title: String,
     pub director: String,
-    pub release_date: DateTime<Utc>,
-    pub ticket_price: f64,
+    pub release_date: NaiveDateTime,
+    pub ticket_price: BigDecimal,
 }
 
 pub struct UpdateMovieParams {
     pub title: Option<String>,
     pub director: Option<String>,
-    pub release_date: Option<DateTime<Utc>>,
-    pub ticket_price: Option<f64>,
+    pub release_date: Option<NaiveDateTime>,
+    pub ticket_price: Option<BigDecimal>,
 }

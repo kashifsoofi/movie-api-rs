@@ -2,11 +2,8 @@ use crate::configuration::{Configuration, DatabaseConfiguration};
 use crate::controllers::{health, movies};
 use crate::store::memory_store::MemoryStore;
 use crate::store::sql_store::SqlStore;
-use crate::store::store::{DynMovieStore, DynStore, Store};
-use axum::{
-    routing::{get, put},
-    Router,
-};
+use crate::store::store::DynStore;
+use axum::{routing::get, Router};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::{ConnectOptions, PgPool};
 use std::net::SocketAddr;
@@ -35,7 +32,7 @@ impl Application {
         );
         let socket_addr: SocketAddr = address.parse().expect("invalid host address");
 
-        let app = app(dyn_store);
+        let app = app(dyn_store).await;
 
         Ok(Self { socket_addr, app })
     }
@@ -50,16 +47,17 @@ impl Application {
     }
 }
 
-pub fn app(store: DynStore) -> Router {
+pub async fn app(store: DynStore) -> Router {
+    let movie_store = store.movie_store().await;
+
     Router::new()
-        .route("/health", get(health::get))
+        .route("/health", get(health::get).with_state(store))
         .route("/movies", get(movies::list).post(movies::create))
         .route(
             "/movies/:id",
             get(movies::get).put(movies::update).delete(movies::delete),
         )
-        .with_state(store.movie_store())
-        .with_state(store)
+        .with_state(movie_store)
 }
 
 pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {
@@ -71,7 +69,7 @@ pub fn get_connection_pool(configuration: &DatabaseConfiguration) -> PgPool {
 
     PgPoolOptions::new()
         .max_connections(configuration.max_open_connections)
-        .acquire_timeout(Duration::from_secs(3))
+        .acquire_timeout(Duration::from_secs(2))
         .connect_lazy_with(connect_options)
 }
 

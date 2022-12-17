@@ -19,15 +19,15 @@ impl MemoryStore {
         let movie_store = MemoryMovieStore::new();
         Self { movie_store }
     }
-
-    pub fn get_movie_store(self) -> MemoryMovieStore {
-        self.movie_store
-    }
 }
 
 #[async_trait]
 impl Store for MemoryStore {
-    fn movie_store(&self) -> DynMovieStore {
+    async fn is_connected(&self) -> bool {
+        true
+    }
+
+    async fn movie_store(&self) -> DynMovieStore {
         Arc::new(self.movie_store.clone()) as DynMovieStore
     }
 }
@@ -75,8 +75,8 @@ impl MovieStore for MemoryMovieStore {
             director: movie_to_create.director,
             release_date: movie_to_create.release_date,
             ticket_price: movie_to_create.ticket_price,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
         };
 
         self.movies.write().insert(movie.id, movie.clone());
@@ -95,28 +95,28 @@ impl MovieStore for MemoryMovieStore {
             match movie_to_update.title {
                 Some(title) => {
                     m.title = title;
-                    m.updated_at = Utc::now();
+                    m.updated_at = Utc::now().naive_utc();
                 }
                 _ => {}
             }
             match movie_to_update.director {
                 Some(director) => {
                     m.director = director;
-                    m.updated_at = Utc::now();
+                    m.updated_at = Utc::now().naive_utc();
                 }
                 _ => {}
             }
             match movie_to_update.release_date {
                 Some(release_date) => {
                     m.release_date = release_date;
-                    m.updated_at = Utc::now();
+                    m.updated_at = Utc::now().naive_utc();
                 }
                 _ => {}
             }
             match movie_to_update.ticket_price {
                 Some(ticket_price) => {
                     m.ticket_price = ticket_price;
-                    m.updated_at = Utc::now();
+                    m.updated_at = Utc::now().naive_utc();
                 }
                 _ => {}
             }
