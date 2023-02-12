@@ -39,11 +39,7 @@ impl From<Movie> for MovieResponse {
 
 pub async fn list(State(movie_store): State<DynMovieStore>) -> impl IntoResponse {
     let movies = movie_store.get_all().await;
-    let mut movie_responses = Vec::new();
-    for movie in movies {
-        let movie_response = MovieResponse::from(movie);
-        movie_responses.push(movie_response);
-    }
+    let movie_responses: Box<[MovieResponse]> = movies.into_iter().map(Into::into).collect();
 
     (StatusCode::OK, Json(movie_responses))
 }
@@ -73,6 +69,17 @@ pub struct CreateMovieRequest {
     ticket_price: f64,
 }
 
+impl From<CreateMovieRequest> for CreateMovieParams {
+    fn from(request: CreateMovieRequest) -> Self {
+        CreateMovieParams {
+            title: request.title,
+            director: request.director,
+            release_date: NaiveDateTime::from_str(&request.release_date).unwrap(),
+            ticket_price: BigDecimal::from_f64(request.ticket_price).unwrap(),
+        }
+    }
+}
+
 pub async fn create(
     State(movie_store): State<DynMovieStore>,
     Json(request): Json<CreateMovieRequest>,
@@ -87,13 +94,7 @@ pub async fn create(
         }
     };
 
-    let params = CreateMovieParams {
-        title: request.title,
-        director: request.director,
-        release_date: release_date,
-        ticket_price: BigDecimal::from_f64(request.ticket_price).unwrap(),
-    };
-    let movie = movie_store.create(params).await;
+    let movie = movie_store.create(request.into()).await;
     let movie = match movie {
         Ok(movie) => movie,
         Err(error_message) => return Err(AppError::Unknown(error_message)),
@@ -166,7 +167,6 @@ pub async fn delete(
         }
     }
 }
-
 pub enum AppError {
     MovieNotFound,
     ValidationError(String),
